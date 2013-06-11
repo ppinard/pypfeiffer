@@ -19,6 +19,7 @@ __copyright__ = "Copyright (c) 2013 Philippe T. Pinard"
 __license__ = "GPL v3"
 
 # Standard library modules.
+import atexit
 import logging
 
 # Third party modules.
@@ -57,12 +58,18 @@ class PfeifferSingleGaugeInterface(object):
                                   timeout=1)
         self._ser.port = comport
 
+        atexit.register(self._auto_disconnect)
+
     def __enter__(self):
         self.connect()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.disconnect()
+
+    def _auto_disconnect(self):
+        if self.is_connected():
+            self.disconnect()
 
     def is_connected(self):
         """
