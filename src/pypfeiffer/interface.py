@@ -28,12 +28,12 @@ import serial
 # Local modules.
 
 # Globals and constants variables.
-CR = chr(13)
-LF = chr(10)
-ETX = chr(3)
-ENQ = chr(5)
-ACK = chr(6)
-NAK = chr(21)
+CR = bytearray(b'\x0d')
+LF = bytearray(b'\x0a')
+ETX = bytearray(b'\x03')
+ENQ = bytearray(b'\x05')
+ACK = bytearray(b'\x06')
+NAK = bytearray(b'\x15')
 
 class PfeifferException(Exception):
     pass
@@ -82,7 +82,7 @@ class PfeifferSingleGaugeInterface(object):
         Connects.
         """
         if self.is_connected():
-            raise PfeifferException, 'Already connected'
+            raise PfeifferException('Already connected')
         self._ser.open()
         logging.debug("Serial connection opened")
 
@@ -95,7 +95,7 @@ class PfeifferSingleGaugeInterface(object):
         Disconnects.
         """
         if not self.is_connected():
-            raise PfeifferException, 'Not connected'
+            raise PfeifferException('Not connected')
         self._ser.close()
         logging.debug("Serial connection closed")
 
@@ -112,15 +112,15 @@ class PfeifferSingleGaugeInterface(object):
                     12: 'Gauge 2 identification error'}
 
         logging.debug("RES sent")
-        self._ser.write('RES' + CR + LF)
+        self._ser.write(b'RES' + CR + LF)
 
         line = self._ser.readline().strip()
-        if line[0] != ACK:
-            raise PfeifferException, "Error sending 'RES'"
+        if line != ACK:
+            raise PfeifferException("Error sending 'RES'")
 
         logging.debug("ENQ sent")
         self._ser.write(ENQ)
-        line = self._ser.readline().strip()
+        line = self._ser.readline().strip().decode('utf-8')
         statuses = map(int, line.split(','))
 
         errors = []
@@ -128,7 +128,7 @@ class PfeifferSingleGaugeInterface(object):
             if status != 0:
                 errors.append(messages[status])
         if errors:
-            raise PfeifferException, "Following error(s) occurred: %s" % ', '.join(errors)
+            raise PfeifferException("Following error(s) occurred: %s" % ', '.join(errors))
 
     def pressure(self, gauge):
         """
@@ -138,19 +138,19 @@ class PfeifferSingleGaugeInterface(object):
                     4: 'Sensor off', 5: 'No sensor', 6: 'Identification error'}
 
         logging.debug("PR%i sent", gauge)
-        self._ser.write('PR%i' % gauge + CR + LF)
+        self._ser.write(bytearray('PR%i' % gauge, 'ascii') + CR + LF)
         line = self._ser.readline().strip()
-        if line[0] != ACK:
-            raise PfeifferException, "Error sending 'PR%i'" % gauge
+        if line != ACK:
+            raise PfeifferException("Error sending 'PR%i'" % gauge)
 
         logging.debug("ENQ sent")
         self._ser.write(ENQ)
-        line = self._ser.readline().strip()
+        line = self._ser.readline().strip().decode('utf-8')
         status, value = line.split(',')
 
         status = int(status)
         if status != 0:
-            raise PfeifferException, messages[status]
+            raise PfeifferException(messages[status])
 
         return float(value)
 
@@ -165,42 +165,42 @@ class PfeifferSingleGaugeInterface(object):
             * pa
         """
         logging.debug('UNI sent')
-        self._ser.write('UNI' + CR + LF)
+        self._ser.write(b'UNI' + CR + LF)
         line = self._ser.readline().strip()
-        if line[0] != ACK:
-            raise PfeifferException, "Error sending 'UNI'"
+        if line != ACK:
+            raise PfeifferException("Error sending 'UNI'")
 
         logging.debug("ENQ sent")
         self._ser.write(ENQ)
-        line = self._ser.readline().strip()
+        line = self._ser.readline().strip().decode('utf-8')
         unit = int(line[0])
 
         return {0: 'bar', 1: 'torr', 2: 'pa'}[unit]
 
     @pressure_unit.setter
     def pressure_unit(self, unit):
-        if isinstance(unit, basestring):
+        if isinstance(unit, str):
             unit = {'bar': 0, 'torr': 1, 'pa': 2, 'pascal': 2}[unit.lower()]
         unit = int(unit)
 
         logging.debug('UNI,%i sent', unit)
-        self._ser.write('UNI,%i' % unit + CR + LF)
+        self._ser.write(bytearray('UNI,%i' % unit, 'ascii') + CR + LF)
         line = self._ser.readline().strip()
-        if line[0] != ACK:
-            raise PfeifferException, "Error sending 'UNI,%i'" % unit
+        if line != ACK:
+            raise PfeifferException("Error sending 'UNI,%i'" % unit)
 
         logging.debug("ENQ sent")
         self._ser.write(ENQ)
-        line = self._ser.readline().strip()
+        line = self._ser.readline().strip().decode('utf-8')
         newunit = int(line[0])
 
         if unit != newunit:
-            raise PfeifferException, "Unable to change pressure unit"
+            raise PfeifferException("Unable to change pressure unit")
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
 
-    with PfeifferSingleGaugeInterface() as p:
+    with PfeifferSingleGaugeInterface('COM2') as p:
         p.reset()
         p.pressure_unit = 'pa'
-        print p.pressure(1), p.pressure_unit
+        print(p.pressure(1), p.pressure_unit)
