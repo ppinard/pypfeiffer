@@ -1,0 +1,4 @@
+include versioneer.py
+include pypfeiffer/_version.py
+recursive-include tests *.py
+include pypfeiffer/_version.py
