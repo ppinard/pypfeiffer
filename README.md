@@ -1,18 +1,11 @@
 # pypfeiffer
 
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ppinard/pypfeiffer/CI)
-![PyPI](https://img.shields.io/pypi/v/pypfeiffer)
 
-Control Pfeiffer vacuum gauge
+Control Pfeiffer SingleGauge TPG 261 via Serial interface
 
 
 ## Installation
-
-Easiest way to install using *pip*:
-
-```
-pip install pypfeiffer
-```
 
 For development installation from the git repository::
 
